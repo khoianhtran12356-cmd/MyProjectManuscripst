@@ -388,6 +388,178 @@ def test_stage_1(excel_path, sheet_name=None):
 
     return wb, ws, records, cc_lookup
 
+
+def update_excel_counts(
+    ws,
+    cc_lookup,
+    cc_counter,
+    reset_before_update=True,
+):
+    """
+    Cập nhật số lần xuất hiện của CC vào Excel.
+
+    Mapping:
+
+        AA -> AB
+        AD -> AE
+        AG -> AH
+        AJ -> AK
+
+    Parameters
+    ----------
+    reset_before_update : bool
+
+        True:
+            Repeat = số lần xuất hiện trong
+            dataset hiện tại.
+
+        False:
+            Repeat = Repeat cũ + số lần xuất hiện mới.
+    """
+
+    # --------------------------------------------------------
+    # Nếu muốn thống kê riêng dataset hiện tại
+    # reset toàn bộ Repeat về 0 trước.
+    # --------------------------------------------------------
+
+    if reset_before_update:
+
+        for record in cc_lookup.values():
+
+            repeat_cell = record["repeat_cell"]
+
+            ws[repeat_cell] = 0
+
+    # --------------------------------------------------------
+    # Update các CC đã xuất hiện
+    # --------------------------------------------------------
+
+    for cc_code, count in cc_counter.items():
+
+        if cc_code not in cc_lookup:
+            continue
+
+        record = cc_lookup[cc_code]
+
+        repeat_cell = record["repeat_cell"]
+
+        if reset_before_update:
+
+            ws[repeat_cell] = count
+
+        else:
+
+            old_value = ws[repeat_cell].value
+
+            if old_value is None:
+                old_value = 0
+
+            try:
+                old_value = int(old_value)
+            except (ValueError, TypeError):
+
+                raise ValueError(
+                    f"Ô {repeat_cell} không chứa "
+                    f"giá trị số hợp lệ: "
+                    f"{old_value}"
+                )
+
+            ws[repeat_cell] = (
+                old_value + count
+            )
+
+
+def save_excel_template(
+    wb,
+    output_path
+):
+    """
+    Lưu workbook .xlsm thành file kết quả.
+    """
+
+    import os
+
+    output_dir = os.path.dirname(
+        os.path.abspath(output_path)
+    )
+
+    os.makedirs(
+        output_dir,
+        exist_ok=True
+    )
+
+    extension = os.path.splitext(
+        output_path
+    )[1].lower()
+
+    if extension != ".xlsm":
+
+        raise ValueError(
+            "Output file phải có định dạng .xlsm"
+        )
+
+    wb.save(output_path)
+
+    if not os.path.isfile(output_path):
+
+        raise IOError(
+            f"Không thể xác nhận file output:\n"
+            f"{output_path}"
+        )
+
+    print(
+        f"\nExcel result saved:\n"
+        f"{output_path}"
+    )
+
+import csv
+import os
+
+
+def save_analysis_log(
+    logs,
+    output_csv
+):
+    """
+    Lưu log phân tích thành CSV.
+    """
+
+    output_dir = os.path.dirname(
+        os.path.abspath(output_csv)
+    )
+
+    os.makedirs(
+        output_dir,
+        exist_ok=True
+    )
+
+    with open(
+        output_csv,
+        "w",
+        newline="",
+        encoding="utf-8-sig"
+    ) as file:
+
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "image",
+                "status",
+                "cc_code",
+                "reason",
+            ]
+        )
+
+        writer.writeheader()
+
+        writer.writerows(logs)
+
+    print(
+        f"Analysis log saved:\n"
+        f"{output_csv}"
+    )
+
+
 if __name__ == "__main__":
 
     excel_path = r"E:\Your_Project\CC_Template.xlsm"
