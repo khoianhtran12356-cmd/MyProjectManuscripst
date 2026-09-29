@@ -2,6 +2,54 @@ from collections import Counter
 from postprocess import process_detections
 
 
+import csv
+import os
+
+
+def save_analysis_log(
+    logs,
+    output_csv
+):
+    """
+    Lưu log phân tích thành CSV.
+    """
+
+    output_dir = os.path.dirname(
+        os.path.abspath(output_csv)
+    )
+
+    os.makedirs(
+        output_dir,
+        exist_ok=True
+    )
+
+    with open(
+        output_csv,
+        "w",
+        newline="",
+        encoding="utf-8-sig"
+    ) as file:
+
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "image",
+                "status",
+                "cc_code",
+                "reason",
+            ]
+        )
+
+        writer.writeheader()
+
+        writer.writerows(logs)
+
+    print(
+        f"Analysis log saved:\n"
+        f"{output_csv}"
+    )
+
+
 def match_cc_code(cc_code, cc_lookup):
     """
     Kiểm tra CC code có nằm trong template hay không.
