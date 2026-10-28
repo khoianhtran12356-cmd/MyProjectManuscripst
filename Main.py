@@ -1,3 +1,100 @@
+%% PFC Controller Design
+% Inner current loop and outer voltage loop
+clear; clc; close all;
+
+Vin = 312;          % Magnitude of AC input voltage
+Vo = 360;           % Output voltage
+Io = 2;             % Output load current
+Rload = Vo/Io;      % Nominal load resistance
+
+Iripple = 0.3*Io*Vo/Vin;
+
+fs = 30e3;          % Switching frequency
+
+% Calculate inductor
+L = (Vin/Iripple)*(1-Vin/Vo)/fs;
+
+rL = 0.05;          % Inductor resistance
+
+C = 2200e-6;        % Output capacitor
+Resr = 25e-3;       % ESR
+
+%% Steady state values
+D = 1 - Vin/Vo;
+D1 = 1 - D;
+
+x1e = Vin/(D1*D1*Rload);
+x2e = Vin/D1;
+
+s = tf('s');
+
+%% Current loop
+
+Gid = (x2e/rL)/(s*L/rL + 1);
+
+T_L = L/rL;
+kdc = x2e/rL;
+
+zeta = 0.7;
+
+Toc = 5e-4;
+
+T_ic = (Toc*Toc/T_L)*(2*zeta*T_L/Toc - 1);
+
+kic = (2*zeta*T_L/Toc - 1)/kdc;
+
+Gpic = kic*(1 + 1/(s*T_ic));
+
+%% Voltage loop
+
+Gvc = Rload/(s*C*Rload + 1);
+
+T_v = C*Rload/2;
+
+kdcv = D1*Rload/2;
+
+zeta = 0.7;
+
+Tocv = 50*Toc;
+
+T_iv = (Tocv*Tocv/T_v)*(2*zeta*T_v/Tocv - 1);
+
+kiv = (2*zeta*T_v/Tocv - 1)/kdcv;
+
+Gpiv = kiv*(1 + 1/(s*T_iv));
+
+%% Display controller parameters
+
+Kp_current = kic;
+Ki_current = kic/T_ic;
+
+Kp_voltage = kiv;
+Ki_voltage = kiv/T_iv;
+
+fprintf('\n===== PFC CONTROLLER PARAMETERS =====\n');
+
+fprintf('L = %.8f H\n',L);
+fprintf('Rload = %.4f Ohm\n',Rload);
+fprintf('D = %.6f\n',D);
+
+fprintf('\n--- Current PI ---\n');
+fprintf('Kp_current = %.10f\n',Kp_current);
+fprintf('Ki_current = %.10f\n',Ki_current);
+
+fprintf('\n--- Voltage PI ---\n');
+fprintf('Kp_voltage = %.10f\n',Kp_voltage);
+fprintf('Ki_voltage = %.10f\n',Ki_voltage);
+
+%% Bode plots
+figure;
+bode(Gid,Gid*Gpic);
+grid on;
+title('Current Loop');
+
+figure;
+bode(Gvc,Gvc*Gpiv);
+grid on;
+title('Voltage Loop');
 import os
 
 from excel_handler import (
